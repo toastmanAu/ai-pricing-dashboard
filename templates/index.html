@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pricing Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+                    <path d="M8 16L14 10L20 16L14 22L8 16Z" fill="white" opacity="0.9"/>
+                    <path d="M14 16L20 10L26 16L20 22L14 16Z" fill="white" opacity="0.6"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                            <stop stop-color="#6366f1"/>
+                            <stop offset="1" stop-color="#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>AI Pricing</span>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-view="dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-view="models">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    Models
+                </button>
+                <button class="nav-item" data-view="providers">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Providers
+                </button>
+                <button class="nav-item" data-view="history">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                    History
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="add-provider-btn" class="add-provider-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Provider
+                </button>
+                <button id="trigger-sweep" class="sweep-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23,4 23,10 17,10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    Run Sweep
+                </button>
+                <div class="last-update" id="last-update">
+                    Last update: --
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="search-bar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search models...">
+                </div>
+                <div class="filter-group">
+                    <select id="provider-filter">
+                        <option value="">All Providers</option>
+                    </select>
+                    <select id="modality-filter">
+                        <option value="">All Types</option>
+                        <option value="text">Text</option>
+                        <option value="vision">Vision</option>
+                        <option value="multimodal">Multimodal</option>
+                    </select>
+                </div>
+            </header>
+
+            <div id="dashboard-view" class="view active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon gradient-1">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-models">--</span>
+                            <span class="stat-label">Total Models</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon gradient-2">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-providers">--</span>
+                            <span class="stat-label">Providers</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon gradient-3">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-avg-price">--</span>
+                            <span class="stat-label">Avg Input $/1M</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon gradient-4">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
+                                <polyline points="17,6 23,6 23,12"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-scrapes">--</span>
+                            <span class="stat-label">Total Scrapes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Price Comparison (Input per 1M tokens)</h3>
+                        <canvas id="price-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Models by Provider</h3>
+                        <canvas id="provider-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="recent-models">
+                    <h3>Latest Models</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Model</th>
+                                    <th>Provider</th>
+                                    <th>Type</th>
+                                    <th>Input $/1M</th>
+                                    <th>Output $/1M</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody id="models-table-body">
+                                <tr><td colspan="6" class="loading">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="models-view" class="view">
+                <div class="models-grid" id="models-grid">
+                </div>
+            </div>
+
+            <div id="providers-view" class="view">
+                <div class="providers-grid" id="providers-grid">
+                </div>
+            </div>
+
+            <div id="history-view" class="view">
+                <div class="history-container">
+                    <h3>Scrape Logs</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>Status</th>
+                                    <th>Models Found</th>
+                                    <th>Duration</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="model-modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="add-provider-modal">
+        <div class="modal-content modal-lg">
+            <button class="modal-close" id="close-add-provider">&times;</button>
+            <h2>Add Provider</h2>
+            <p class="modal-subtitle">Add a new AI provider to track pricing for their models.</p>
+
+            <form id="add-provider-form">
+                <div class="form-group">
+                    <label for="provider-name">Provider Name <span class="required">*</span></label>
+                    <input type="text" id="provider-name" placeholder="e.g. Together AI, Groq, Fireworks" required>
+                    <span class="field-error" id="name-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="provider-website">Website URL <span class="required">*</span></label>
+                    <input type="url" id="provider-website" placeholder="https://together.ai" required>
+                    <span class="field-error" id="website-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Pricing URLs <span class="required">*</span></label>
+                    <p class="field-hint">Add URLs where model pricing information is published. Each URL will be verified before saving.</p>
+                    <div id="pricing-urls-container">
+                        <div class="url-input-row">
+                            <input type="url" class="pricing-url-input" placeholder="https://together.ai/pricing" required>
+                            <button type="button" class="remove-url-btn" title="Remove URL">&times;</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-url-btn" class="add-url-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add URL
+                    </button>
+                    <span class="field-error" id="urls-error"></span>
+                </div>
+
+                <div id="verification-results" class="verification-results" style="display:none">
+                    <h3>Endpoint Verification</h3>
+                    <div id="verification-list"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-add-provider">Cancel</button>
+                    <button type="submit" class="btn-primary" id="save-provider-btn" disabled>
+                        <span class="btn-text">Save Provider</span>
+                        <span class="btn-loading" style="display:none">
+                            <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                            Verifying...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
