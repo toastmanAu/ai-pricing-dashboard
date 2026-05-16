@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initModal();
     initSweepButton();
     initAddProvider();
+    initHFModels();
     loadDashboard();
 });
 
@@ -28,13 +29,15 @@ function initNavigation() {
                 dashboard: 'Dashboard',
                 models: 'All Models',
                 providers: 'Providers',
-                history: 'Scrape History'
+                history: 'Scrape History',
+                'hf-models': 'HF Models'
             };
             document.getElementById('page-title').textContent = titles[view] || 'Dashboard';
             
             if (view === 'models') loadModels();
             if (view === 'providers') loadProviders();
             if (view === 'history') loadHistory();
+            if (view === 'hf-models') loadHFPage();
         });
     });
 }
@@ -668,6 +671,194 @@ function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+let hfCompanies = [];
+let hfModels = [];
+let selectedHFCompany = null;
+
+function initHFModels() {
+    document.getElementById('hf-sync-btn').addEventListener('click', syncHFModels);
+    document.getElementById('hf-company-search').addEventListener('input', filterHFCompanies);
+    document.getElementById('hf-model-search').addEventListener('input', loadHFModels);
+    document.getElementById('hf-pipeline-filter').addEventListener('change', loadHFModels);
+    document.getElementById('hf-sort').addEventListener('change', loadHFModels);
+}
+
+async function loadHFPage() {
+    await Promise.all([loadHFCompanies(), loadHFModels(), loadHFStats()]);
+}
+
+async function loadHFCompanies() {
+    try {
+        const res = await fetch(`${API_BASE}/api/hf/companies`);
+        hfCompanies = await res.json();
+        renderHFCompanies(hfCompanies);
+    } catch (err) {
+        console.error('Failed to load HF companies:', err);
+    }
+}
+
+function renderHFCompanies(companies) {
+    const list = document.getElementById('hf-company-list');
+    list.innerHTML = companies.map(c => `
+        <div class="hf-company-item ${c.is_tracked ? 'tracked' : ''} ${selectedHFCompany === c.hf_org ? 'active' : ''}" 
+             data-org="${c.hf_org}" onclick="selectHFCompany('${c.hf_org}')">
+            <div class="hf-company-toggle"></div>
+            <span class="hf-company-name">${c.display_name || c.name}</span>
+            ${c.new_today > 0 ? `<span class="hf-company-new">+${c.new_today}</span>` : ''}
+            <span class="hf-company-count">${c.model_count}</span>
+        </div>
+    `).join('');
+}
+
+function filterHFCompanies() {
+    const search = document.getElementById('hf-company-search').value.toLowerCase();
+    const filtered = hfCompanies.filter(c =>
+        (c.display_name || c.name).toLowerCase().includes(search) ||
+        c.hf_org.toLowerCase().includes(search)
+    );
+    renderHFCompanies(filtered);
+}
+
+function selectHFCompany(hfOrg) {
+    selectedHFCompany = selectedHFCompany === hfOrg ? null : hfOrg;
+    loadHFModels();
+}
+
+async function loadHFModels() {
+    const params = new URLSearchParams();
+    if (selectedHFCompany) params.set('company', selectedHFCompany);
+    
+    const search = document.getElementById('hf-model-search').value;
+    if (search) params.set('search', search);
+    
+    const pipeline = document.getElementById('hf-pipeline-filter').value;
+    if (pipeline) params.set('pipeline_tag', pipeline);
+    
+    params.set('sort', document.getElementById('hf-sort').value);
+    params.set('limit', '200');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/hf/models?${params}`);
+        hfModels = await res.json();
+        renderHFModels(hfModels);
+    } catch (err) {
+        console.error('Failed to load HF models:', err);
+    }
+}
+
+function renderHFModels(models) {
+    const grid = document.getElementById('hf-models-grid');
+    
+    if (!models.length) {
+        grid.innerHTML = `
+            <div class="hf-empty" style="grid-column: 1/-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <p>No models found</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = models.map(m => {
+        const isNew = isNewModel(m.discovered_at);
+        const tags = parseTags(m.tags);
+        const date = formatDate(m.created_at || m.discovered_at);
+        
+        return `
+            <div class="hf-model-card ${isNew ? 'new' : ''}" onclick="window.open('${m.hf_url}', '_blank')">
+                <div class="hf-model-header">
+                    <span class="hf-model-name">${escapeHtml(m.name)}</span>
+                    <span class="hf-model-company">${escapeHtml(m.company_name)}</span>
+                </div>
+                <div class="hf-model-meta">
+                    <span>♥ ${formatNumber(m.likes)}</span>
+                    <span>↓ ${formatNumber(m.downloads)}</span>
+                    ${m.pipeline_tag ? `<span class="hf-tag pipeline">${escapeHtml(m.pipeline_tag)}</span>` : ''}
+                </div>
+                ${tags.length > 0 ? `
+                    <div class="hf-model-tags">
+                        ${tags.slice(0, 5).map(t => `<span class="hf-tag">${escapeHtml(t)}</span>`).join('')}
+                        ${tags.length > 5 ? `<span class="hf-tag">+${tags.length - 5}</span>` : ''}
+                    </div>
+                ` : ''}
+                <div class="hf-model-date">${date}${isNew ? ' · <span style="color: var(--success)">New</span>' : ''}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadHFStats() {
+    try {
+        const res = await fetch(`${API_BASE}/api/hf/stats`);
+        const stats = await res.json();
+        document.getElementById('hf-total-models').textContent = stats.total_models;
+        document.getElementById('hf-tracked-companies').textContent = stats.tracked_companies;
+        document.getElementById('hf-new-today').textContent = stats.new_today;
+    } catch (err) {
+        console.error('Failed to load HF stats:', err);
+    }
+}
+
+async function syncHFModels() {
+    const btn = document.getElementById('hf-sync-btn');
+    btn.innerHTML = `<svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Syncing...`;
+    btn.disabled = true;
+
+    try {
+        await fetch(`${API_BASE}/api/hf/sync`, { method: 'POST' });
+        setTimeout(async () => {
+            await loadHFPage();
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Sync Now`;
+            btn.disabled = false;
+        }, 10000);
+    } catch (err) {
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Sync Now`;
+        btn.disabled = false;
+    }
+}
+
+function isNewModel(dateStr) {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now - date;
+    return diff < 7 * 24 * 60 * 60 * 1000;
+}
+
+function parseTags(tagsStr) {
+    if (!tagsStr) return [];
+    try {
+        const tags = JSON.parse(tagsStr);
+        return tags.filter(t => !t.startsWith('license:') && !t.startsWith('region:') && !['transformers', 'safetensors', 'pytorch', 'endpoints_compatible'].includes(t));
+    } catch {
+        return [];
+    }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+    
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatNumber(num) {
+    if (!num) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
 }
 
 const style = document.createElement('style');

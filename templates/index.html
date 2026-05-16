@@ -55,6 +55,14 @@
                     </svg>
                     History
                 </button>
+                <button class="nav-item" data-view="hf-models">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    HF Models
+                </button>
             </nav>
 
             <div class="sidebar-footer">
@@ -212,6 +220,88 @@
                             <tbody id="logs-table-body">
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hf-models-view" class="view">
+                <div class="hf-container">
+                    <div class="hf-header">
+                        <div>
+                            <h2>Hugging Face Model Tracker</h2>
+                            <p class="hf-subtitle">Track new model releases from top AI companies</p>
+                        </div>
+                        <button id="hf-sync-btn" class="hf-sync-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23,4 23,10 17,10"/>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                            Sync Now
+                        </button>
+                    </div>
+
+                    <div class="hf-stats" id="hf-stats">
+                        <div class="hf-stat">
+                            <span class="hf-stat-value" id="hf-total-models">--</span>
+                            <span class="hf-stat-label">Total Models</span>
+                        </div>
+                        <div class="hf-stat">
+                            <span class="hf-stat-value" id="hf-tracked-companies">--</span>
+                            <span class="hf-stat-label">Tracked Companies</span>
+                        </div>
+                        <div class="hf-stat">
+                            <span class="hf-stat-value" id="hf-new-today">--</span>
+                            <span class="hf-stat-label">New Today</span>
+                        </div>
+                    </div>
+
+                    <div class="hf-layout">
+                        <aside class="hf-sidebar">
+                            <h3>Companies</h3>
+                            <div class="hf-company-search">
+                                <input type="text" id="hf-company-search" placeholder="Filter companies...">
+                            </div>
+                            <div class="hf-company-list" id="hf-company-list">
+                            </div>
+                        </aside>
+
+                        <main class="hf-main">
+                            <div class="hf-toolbar">
+                                <div class="hf-search">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"/>
+                                        <path d="m21 21-4.35-4.35"/>
+                                    </svg>
+                                    <input type="text" id="hf-model-search" placeholder="Search models...">
+                                </div>
+                                <div class="hf-filters">
+                                    <select id="hf-pipeline-filter">
+                                        <option value="">All Types</option>
+                                        <option value="text-generation">Text Generation</option>
+                                        <option value="text-classification">Classification</option>
+                                        <option value="text-to-image">Text-to-Image</option>
+                                        <option value="image-text-to-text">Vision</option>
+                                        <option value="translation">Translation</option>
+                                        <option value="summarization">Summarization</option>
+                                        <option value="feature-extraction">Embeddings</option>
+                                    </select>
+                                    <select id="hf-sort">
+                                        <option value="newest">Newest First</option>
+                                        <option value="oldest">Oldest First</option>
+                                        <option value="likes">Most Likes</option>
+                                        <option value="downloads">Most Downloads</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="hf-models-grid" id="hf-models-grid">
+                            </div>
+
+                            <div class="hf-summary" id="hf-summary-section" style="display:none">
+                                <h3>Daily Summary</h3>
+                                <div id="hf-summary-content"></div>
+                            </div>
+                        </main>
                     </div>
                 </div>
             </div>

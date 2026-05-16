@@ -89,6 +89,56 @@ async function initDb() {
         )
     `);
 
+    db.run(`
+        CREATE TABLE IF NOT EXISTS hf_companies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            hf_org TEXT UNIQUE NOT NULL,
+            display_name TEXT,
+            logo_url TEXT,
+            description TEXT,
+            website TEXT,
+            is_tracked INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS hf_models (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hf_model_id TEXT UNIQUE NOT NULL,
+            company_id INTEGER,
+            name TEXT NOT NULL,
+            full_name TEXT NOT NULL,
+            pipeline_tag TEXT,
+            library_name TEXT,
+            tags TEXT,
+            likes INTEGER DEFAULT 0,
+            downloads INTEGER DEFAULT 0,
+            is_private INTEGER DEFAULT 0,
+            created_at TEXT,
+            last_modified TEXT,
+            discovered_at TEXT DEFAULT (datetime('now')),
+            hf_url TEXT,
+            FOREIGN KEY (company_id) REFERENCES hf_companies(id)
+        )
+    `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS hf_daily_summary (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            summary_date TEXT NOT NULL,
+            company_id INTEGER,
+            total_new_models INTEGER DEFAULT 0,
+            model_names TEXT,
+            highlights TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (company_id) REFERENCES hf_companies(id),
+            UNIQUE(summary_date, company_id)
+        )
+    `);
+
     saveDb();
     console.log('Database initialized');
 }

@@ -4,6 +4,15 @@ const path = require('path');
 const cron = require('node-cron');
 const { initDb, query, run } = require('./db');
 const { seedInitialData, runFullSweep, scrapeProvider, verifyEndpoint } = require('./scraper');
+const {
+    seedCompanies,
+    syncAllTrackedCompanies,
+    getHFModels,
+    getHFCompanies,
+    toggleCompanyTracking,
+    generateDailySummary,
+    getDailySummaries,
+} = require('./hf-scraper');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -280,9 +289,77 @@ app.post('/api/verify-endpoint', async (req, res) => {
     res.json(result);
 });
 
+app.get('/api/hf/companies', (req, res) => {
+    res.json(getHFCompanies());
+});
+
+app.get('/api/hf/models', (req, res) => {
+    const filters = {
+        company: req.query.company || null,
+        pipeline_tag: req.query.pipeline_tag || null,
+        search: req.query.search || null,
+        since: req.query.since || null,
+        sort: req.query.sort || 'newest',
+        limit: parseInt(req.query.limit) || 100,
+    };
+    res.json(getHFModels(filters));
+});
+
+app.post('/api/hf/sync', async (req, res) => {
+    res.json({ status: 'started' });
+    try {
+        const totalNew = await syncAllTrackedCompanies();
+        console.log(`HF sync complete: ${totalNew} new models`);
+    } catch (err) {
+        console.error('HF sync failed:', err.message);
+    }
+});
+
+app.post('/api/hf/companies/:hfOrg/toggle', (req, res) => {
+    const { tracked } = req.body;
+    toggleCompanyTracking(req.params.hfOrg, tracked !== false);
+    res.json({ status: 'updated', hf_org: req.params.hfOrg, tracked });
+});
+
+app.get('/api/hf/summary', (req, res) => {
+    const days = parseInt(req.query.days) || 7;
+    res.json(getDailySummaries(days));
+});
+
+app.post('/api/hf/summary/generate', (req, res) => {
+    const date = (req.body && req.body.date) || null;
+    const summaries = generateDailySummary(date);
+    res.json({ status: 'generated', date: date || new Date().toISOString().split('T')[0], summaries });
+});
+
+app.get('/api/hf/stats', (req, res) => {
+    const totalModels = query(`SELECT COUNT(*) as count FROM hf_models`)[0]?.count || 0;
+    const totalCompanies = query(`SELECT COUNT(*) as count FROM hf_companies WHERE is_tracked = 1`)[0]?.count || 0;
+    const todayNew = query(`SELECT COUNT(*) as count FROM hf_models WHERE date(discovered_at) = date('now')`)[0]?.count || 0;
+    const lastSync = query(`SELECT MAX(discovered_at) as last FROM hf_models`)[0]?.last || null;
+
+    const topCompanies = query(`
+        SELECT c.display_name as company, COUNT(m.id) as model_count
+        FROM hf_models m
+        JOIN hf_companies c ON m.company_id = c.id
+        GROUP BY c.id
+        ORDER BY model_count DESC
+        LIMIT 10
+    `);
+
+    res.json({
+        total_models: totalModels,
+        tracked_companies: totalCompanies,
+        new_today: todayNew,
+        last_sync: lastSync,
+        top_companies: topCompanies,
+    });
+});
+
 async function start() {
     await initDb();
     seedInitialData();
+    seedCompanies();
 
     const updateInterval = parseInt(process.env.UPDATE_INTERVAL_HOURS) || 24;
     const cronExpr = `0 */${updateInterval} * * *`;
@@ -292,6 +369,17 @@ async function start() {
             await runFullSweep();
         } catch (err) {
             console.error('Scheduled sweep failed:', err.message);
+        }
+    });
+
+    cron.schedule('0 9 * * *', async () => {
+        console.log('Running daily HF model sync...');
+        try {
+            const totalNew = await syncAllTrackedCompanies();
+            generateDailySummary();
+            console.log(`HF daily sync: ${totalNew} new models`);
+        } catch (err) {
+            console.error('HF daily sync failed:', err.message);
         }
     });
 
