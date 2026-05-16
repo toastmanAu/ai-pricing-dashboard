@@ -296,7 +296,7 @@ app.get('/api/hf/companies', (req, res) => {
 app.get('/api/hf/models', (req, res) => {
     const filters = {
         company: req.query.company || null,
-        pipeline_tag: req.query.pipeline_tag || null,
+        pipeline_tag: req.query.pipeline_tag === '__none__' ? '__none__' : (req.query.pipeline_tag || null),
         search: req.query.search || null,
         since: req.query.since || null,
         sort: req.query.sort || 'newest',

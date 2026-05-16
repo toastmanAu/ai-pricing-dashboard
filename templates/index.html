@@ -277,13 +277,62 @@
                                 <div class="hf-filters">
                                     <select id="hf-pipeline-filter">
                                         <option value="">All Types</option>
-                                        <option value="text-generation">Text Generation</option>
-                                        <option value="text-classification">Classification</option>
-                                        <option value="text-to-image">Text-to-Image</option>
-                                        <option value="image-text-to-text">Vision</option>
-                                        <option value="translation">Translation</option>
-                                        <option value="summarization">Summarization</option>
-                                        <option value="feature-extraction">Embeddings</option>
+                                        <optgroup label="Language">
+                                            <option value="text-generation">Text Generation (LLMs)</option>
+                                            <option value="text-classification">Text Classification</option>
+                                            <option value="fill-mask">Fill-Mask</option>
+                                            <option value="token-classification">Token Classification (NER)</option>
+                                            <option value="translation">Translation</option>
+                                            <option value="summarization">Summarization</option>
+                                            <option value="question-answering">Question Answering</option>
+                                            <option value="table-question-answering">Table QA</option>
+                                            <option value="zero-shot-classification">Zero-Shot Classification</option>
+                                        </optgroup>
+                                        <optgroup label="Vision">
+                                            <option value="image-text-to-text">Vision-Language (VLMs)</option>
+                                            <option value="image-to-text">Image-to-Text</option>
+                                            <option value="text-to-image">Text-to-Image</option>
+                                            <option value="image-classification">Image Classification</option>
+                                            <option value="image-segmentation">Image Segmentation</option>
+                                            <option value="object-detection">Object Detection</option>
+                                            <option value="zero-shot-object-detection">Zero-Shot Object Detection</option>
+                                            <option value="zero-shot-image-classification">Zero-Shot Image Classification</option>
+                                            <option value="depth-estimation">Depth Estimation</option>
+                                            <option value="mask-generation">Mask Generation</option>
+                                            <option value="keypoint-detection">Keypoint Detection</option>
+                                            <option value="visual-document-retrieval">Visual Document Retrieval</option>
+                                        </optgroup>
+                                        <optgroup label="Video">
+                                            <option value="text-to-video">Text-to-Video</option>
+                                            <option value="image-to-video">Image-to-Video</option>
+                                            <option value="video-classification">Video Classification</option>
+                                        </optgroup>
+                                        <optgroup label="Audio">
+                                            <option value="text-to-speech">Text-to-Speech (TTS)</option>
+                                            <option value="text-to-audio">Text-to-Audio</option>
+                                            <option value="automatic-speech-recognition">Speech Recognition (ASR)</option>
+                                            <option value="audio-classification">Audio Classification</option>
+                                            <option value="audio-to-audio">Audio-to-Audio</option>
+                                            <option value="voice-activity-detection">Voice Activity Detection</option>
+                                            <option value="audio-text-to-text">Audio-Text-to-Text</option>
+                                        </optgroup>
+                                        <optgroup label="Embeddings &amp; Similarity">
+                                            <option value="feature-extraction">Feature Extraction</option>
+                                            <option value="sentence-similarity">Sentence Similarity</option>
+                                            <option value="text-ranking">Text Ranking</option>
+                                            <option value="image-feature-extraction">Image Feature Extraction</option>
+                                        </optgroup>
+                                        <optgroup label="Multimodal &amp; Other">
+                                            <option value="any-to-any">Any-to-Any (Omni)</option>
+                                            <option value="image-text-to-image">Image-Text-to-Image</option>
+                                            <option value="image-to-3d">Image-to-3D</option>
+                                            <option value="robotics">Robotics</option>
+                                            <option value="time-series-forecasting">Time Series Forecasting</option>
+                                            <option value="other">Other</option>
+                                        </optgroup>
+                                        <optgroup label="Unclassified">
+                                            <option value="__none__">No Pipeline Tag</option>
+                                        </optgroup>
                                     </select>
                                     <select id="hf-sort">
                                         <option value="newest">Newest First</option>

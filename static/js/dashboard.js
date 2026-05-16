@@ -734,7 +734,11 @@ async function loadHFModels() {
     if (search) params.set('search', search);
     
     const pipeline = document.getElementById('hf-pipeline-filter').value;
-    if (pipeline) params.set('pipeline_tag', pipeline);
+    if (pipeline === '__none__') {
+        params.set('pipeline_tag', '__none__');
+    } else if (pipeline) {
+        params.set('pipeline_tag', pipeline);
+    }
     
     params.set('sort', document.getElementById('hf-sort').value);
     params.set('limit', '200');

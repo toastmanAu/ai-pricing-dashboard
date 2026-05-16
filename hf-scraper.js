@@ -157,7 +157,9 @@ function getHFModels(filters = {}) {
         sql += ' AND c.hf_org = ?';
         params.push(filters.company);
     }
-    if (filters.pipeline_tag) {
+    if (filters.pipeline_tag === '__none__') {
+        sql += ' AND (m.pipeline_tag IS NULL OR m.pipeline_tag = "")';
+    } else if (filters.pipeline_tag) {
         sql += ' AND m.pipeline_tag = ?';
         params.push(filters.pipeline_tag);
     }
